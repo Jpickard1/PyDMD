@@ -810,88 +810,14 @@ def plot_summary(
     )
 
     # PLOT 1: Plot the singular value spectrum.
-    eig_axes[0].set_title("Singular Values", fontsize=title_fontsize)
-    eig_axes[0].set_ylabel("% variance", fontsize=label_fontsize)
-    s_t = np.arange(len(s_var)) + 1
-    eig_axes[0].plot(
-        s_t[:rank],
-        s_var[:rank],
-        "o",
-        c=rank_color,
-        ms=sval_ms,
-        mec="k",
-    )
-    eig_axes[0].plot(
-        s_t[rank:],
-        s_var[rank:],
-        "o",
-        c="gray",
-        ms=sval_ms,
-        mec="k",
-    )
-    eig_axes[0].legend(
-        handles=[Patch(facecolor=rank_color, label="Rank of fit")]
-    )
-    if plot_semilogy:
-        eig_axes[0].semilogy()
+    # Plot singular value spectrum
+    plot_singular_value_spectrum(eig_axes[0], s_var, rank, max_sval_plot, plot_semilogy, title_fontsize, label_fontsize, sval_ms, rank_color)
 
-    # PLOTS 2-3: Plot the eigenvalues (discrete-time and continuous-time).
-    # Scale marker sizes to reflect their associated amplitude.
-    ms_vals = max_eig_ms * np.sqrt(lead_amplitudes / lead_amplitudes[0])
+    # Plot discrete-time eigenvalues
+    plot_discrete_eigenvalues(eig_axes[1], disc_eigs, circle_color, main_colors, index_modes_cc, other_eigs, max_eig_ms, lead_amplitudes, rank_color, title_fontsize, label_fontsize)
 
-    # PLOT 2: Plot the discrete-time eigenvalues on the unit circle.
-    eig_axes[1].axvline(x=0, c="k", lw=1)
-    eig_axes[1].axhline(y=0, c="k", lw=1)
-    eig_axes[1].axis("equal")
-    eig_axes[1].set_title("Discrete-time Eigenvalues", fontsize=title_fontsize)
-    t = np.linspace(0, 2 * np.pi, 100)
-    eig_axes[1].plot(np.cos(t), np.sin(t), c=circle_color, ls="--")
-    eig_axes[1].set_xlabel(r"$Re(\lambda)$", fontsize=label_fontsize)
-    eig_axes[1].set_ylabel(r"$Im(\lambda)$", fontsize=label_fontsize)
-
-    # PLOT 3: Plot the continuous-time eigenvalues.
-    eig_axes[2].axvline(x=0, c="k", lw=1)
-    eig_axes[2].axhline(y=0, c="k", lw=1)
-    eig_axes[2].axis("equal")
-    eig_axes[2].set_title(
-        "Continuous-time Eigenvalues",
-        fontsize=title_fontsize,
-    )
-    if flip_continuous_axes:
-        eig_axes[2].set_xlabel(r"$Im(\omega)$", fontsize=label_fontsize)
-        eig_axes[2].set_ylabel(r"$Re(\omega)$", fontsize=label_fontsize)
-        eig_axes[2].invert_xaxis()
-        cont_eigs = 1j * cont_eigs.real + cont_eigs.imag
-    else:
-        eig_axes[2].set_xlabel(r"$Re(\omega)$", fontsize=label_fontsize)
-        eig_axes[2].set_ylabel(r"$Im(\omega)$", fontsize=label_fontsize)
-
-    # Now plot the eigenvalues and record the colors used for each main index.
-    mode_colors = {}
-    for ax, eigs in zip([eig_axes[1], eig_axes[2]], [disc_eigs, cont_eigs]):
-        if eigs is not None:
-            # Plot the main indices and their complex conjugate.
-            for i, indices in enumerate(index_modes_cc):
-                for idx in indices:
-                    ax.plot(
-                        eigs[idx].real,
-                        eigs[idx].imag,
-                        "o",
-                        c=main_colors[i],
-                        ms=ms_vals[idx],
-                        mec="k",
-                    )
-                    mode_colors[idx] = main_colors[i]
-            # Plot all other DMD eigenvalues.
-            for idx in other_eigs:
-                ax.plot(
-                    eigs[idx].real,
-                    eigs[idx].imag,
-                    "o",
-                    c=rank_color,
-                    ms=ms_vals[idx],
-                    mec="k",
-                )
+    # Plot continuous-time eigenvalues
+    plot_continuous_eigenvalues(eig_axes[2], cont_eigs, main_colors, index_modes_cc, other_eigs, max_eig_ms, lead_amplitudes, rank_color, flip_continuous_axes, title_fontsize, label_fontsize)
 
     # Build the spatial grid for the mode plots.
     if x is None:
@@ -955,3 +881,77 @@ def plot_summary(
         plt.close(fig)
     else:
         plt.show()
+
+# Singular value spectrum plot function
+def plot_singular_value_spectrum(ax, s_var, rank, max_sval_plot, plot_semilogy, title_fontsize, label_fontsize, sval_ms, rank_color):
+    ax.set_title("Singular Values", fontsize=title_fontsize)
+    ax.set_ylabel("% variance", fontsize=label_fontsize)
+    s_t = np.arange(len(s_var)) + 1
+    ax.plot(s_t[:rank], s_var[:rank], "o", c=rank_color, ms=sval_ms, mec="k")
+    ax.plot(s_t[rank:], s_var[rank:], "o", c="gray", ms=sval_ms, mec="k")
+    ax.legend(handles=[Patch(facecolor=rank_color, label="Rank of fit")])
+    if plot_semilogy:
+        ax.semilogy()
+
+# Discrete-time eigenvalues plot function
+def plot_discrete_eigenvalues(ax, disc_eigs, circle_color, main_colors, index_modes_cc, other_eigs, max_eig_ms, lead_amplitudes, rank_color, title_fontsize, label_fontsize):
+    ax.axvline(x=0, c="k", lw=1)
+    ax.axhline(y=0, c="k", lw=1)
+    ax.axis("equal")
+    ax.set_title("Discrete-time Eigenvalues", fontsize=title_fontsize)
+    t = np.linspace(0, 2 * np.pi, 100)
+    ax.plot(np.cos(t), np.sin(t), c=circle_color, ls="--")
+    ax.set_xlabel(r"$Re(\lambda)$", fontsize=label_fontsize)
+    ax.set_ylabel(r"$Im(\lambda)$", fontsize=label_fontsize)
+    ms_vals = max_eig_ms * np.sqrt(lead_amplitudes / lead_amplitudes[0])
+    if disc_eigs is not None:
+        for i, indices in enumerate(index_modes_cc):
+            for idx in indices:
+                ax.plot(disc_eigs[idx].real, disc_eigs[idx].imag, "o", c=main_colors[i], ms=ms_vals[idx], mec="k")
+        for idx in other_eigs:
+            ax.plot(disc_eigs[idx].real, disc_eigs[idx].imag, "o", c=rank_color, ms=ms_vals[idx], mec="k")
+
+# Continuous-time eigenvalues plot function
+def plot_continuous_eigenvalues(ax, cont_eigs, main_colors, index_modes_cc, other_eigs, max_eig_ms, lead_amplitudes, rank_color, flip_continuous_axes, title_fontsize, label_fontsize):
+    ax.axvline(x=0, c="k", lw=1)
+    ax.axhline(y=0, c="k", lw=1)
+    ax.axis("equal")
+    ax.set_title("Continuous-time Eigenvalues", fontsize=title_fontsize)
+    if flip_continuous_axes:
+        ax.set_xlabel(r"$Im(\omega)$", fontsize=label_fontsize)
+        ax.set_ylabel(r"$Re(\omega)$", fontsize=label_fontsize)
+        ax.invert_xaxis()
+        cont_eigs = 1j * cont_eigs.real + cont_eigs.imag
+    else:
+        ax.set_xlabel(r"$Re(\omega)$", fontsize=label_fontsize)
+        ax.set_ylabel(r"$Im(\omega)$", fontsize=label_fontsize)
+    ms_vals = max_eig_ms * np.sqrt(lead_amplitudes / lead_amplitudes[0])
+    if cont_eigs is not None:
+        for i, indices in enumerate(index_modes_cc):
+            for idx in indices:
+                ax.plot(cont_eigs[idx].real, cont_eigs[idx].imag, "o", c=main_colors[i], ms=ms_vals[idx], mec="k")
+        for idx in other_eigs:
+            ax.plot(cont_eigs[idx].real, cont_eigs[idx].imag, "o", c=rank_color, ms=ms_vals[idx], mec="k")
+
+# DMD mode plot function (1D or 2D)
+def plot_dmd_mode(ax, mode, mode_color, mode_cmap, xgrid=None, ygrid=None, order='C', title_fontsize=14):
+    if xgrid is None:
+        ax.plot(mode.real, c=mode_color)
+    else:
+        mode = mode.reshape(xgrid.shape, order=order)
+        vmax = np.abs(mode.real).max()
+        im = ax.pcolormesh(xgrid, ygrid, mode.real, vmax=vmax, vmin=-vmax, cmap=mode_cmap)
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="3%", pad=0.05)
+        plt.colorbar(im, cax=cax)
+    ax.set_title(f"Mode", fontsize=title_fontsize)
+
+# DMD dynamics plot function
+def plot_dmd_dynamics(ax, time, dynamics_data, dynamics_color, title_fontsize=14, label_fontsize=12):
+    ax.plot(time, dynamics_data, c=dynamics_color)
+    ax.set_title("Mode Dynamics", fontsize=title_fontsize)
+    ax.set_xlabel("Time", fontsize=label_fontsize)
+    dynamics_range = dynamics_data.max() - dynamics_data.min()
+    if dynamics_range / np.abs(np.average(dynamics_data)) < 1e-4:
+        ax.set_ylim(np.sort([0.0, 2 * np.average(dynamics_data)]))
+
